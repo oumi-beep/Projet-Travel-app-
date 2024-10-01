@@ -11,30 +11,32 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const users = JSON.parse(localStorage.getItem('users')) || {};
-
-    if (isLogin) {
-      if (users[username] && users[username].password === password) {
-        alert('Login successful!');
-        const userInfo = { username, profilePic: users[username].profilePic };
-        localStorage.setItem('currentUser', JSON.stringify(userInfo));
-        onLogin(userInfo);
-        onClose();
+    try {
+        const response = await fetch('http://localhost:8081/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password }),
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+          const userInfo = { username: data.user.username ,password:data.user.password}; // Adjust based on your data
+          localStorage.setItem('currentUser', JSON.stringify(userInfo)); // Store in local storage
+          onLogin(userInfo); // Pass user info to parent component
+          onClose(); // Close the modal
       } else {
-        setErrorMessage('Invalid username or password.');
+          setErrorMessage(data.message);
       }
-    } else {
-      if (users[username]) {
-        setErrorMessage('User already exists.');
-        return;
-      }
-      users[username] = { password, profilePic: 'path/to/profile-pic.jpg' };
-      localStorage.setItem('users', JSON.stringify(users));
-      alert('Sign up successful!');
-      setIsLogin(true);
+      
+    } catch (error) {
+        console.error('Error:', error);
+        setErrorMessage('Something went wrong. Please try again.');
     }
-  };
+};
 
+ 
   if (!isOpen) return null;
 
   return (
